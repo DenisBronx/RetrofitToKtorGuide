@@ -1,39 +1,49 @@
 package com.denisbrandi.migrateretrofit.data.repository
 
-import com.denisbrandi.migrateretrofit.data.api.GithubProjectApiService
 import com.denisbrandi.migrateretrofit.data.model.JsonGithubProject
 import com.denisbrandi.migrateretrofit.domain.model.GetProjectsError
 import com.denisbrandi.migrateretrofit.domain.model.GithubProject
 import com.denisbrandi.migrateretrofit.domain.repository.GithubProjectRepository
 import com.denisbrandi.migrateretrofit.prelude.Answer
-import retrofit2.Response
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.isSuccess
 
 class RealGithubProjectRepository(
-    private val githubProjectApiService: GithubProjectApiService
+    private val httpClient: HttpClient
 ) : GithubProjectRepository {
     override suspend fun getProjectsForOrganisation(
         organisation: String
     ): Answer<List<GithubProject>, GetProjectsError> {
         return try {
-            val apiResponse = githubProjectApiService.getProjectsForOrganisation(organisation)
+            val apiResponse = httpClient.get("https://api.github.com/orgs/$organisation/repos") {
+                headers {
+                    append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+            }
             return mapSuccess(apiResponse)
         } catch (t: Throwable) {
             Answer.Error(GetProjectsError.GenericError)
         }
     }
 
-    private fun mapSuccess(
-        apiResponse: Response<List<JsonGithubProject>>
+    private suspend fun mapSuccess(
+        apiResponse: HttpResponse
     ): Answer<List<GithubProject>, GetProjectsError> {
-        return if (apiResponse.isSuccessful) {
-            val projects = apiResponse.body()
+        return if (apiResponse.status.isSuccess()) {
+            val projects = apiResponse.body<List<JsonGithubProject>?>()
             if (projects != null) {
                 Answer.Success(mapDtoList(projects))
             } else {
                 Answer.Error(GetProjectsError.GenericError)
             }
         } else {
-            mapError(apiResponse.code())
+            mapError(apiResponse.status.value)
         }
     }
 

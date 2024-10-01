@@ -1,18 +1,18 @@
 package com.denisbrandi.migrateretrofit.data.model
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 class JsonGithubProject(
-    @field:Json(name = "id") val id: String,
-    @field:Json(name = "name") val name: String,
-    @field:Json(name = "full_name") val fullName: String,
-    @field:Json(name = "description") val description: String,
-    @field:Json(name = "owner") val owner: JsonOwner
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("full_name") val fullName: String,
+    @SerialName("description") val description: String,
+    @SerialName("owner") val owner: JsonOwner
 )
 
-@JsonClass(generateAdapter = true)
+@Serializable
 class JsonOwner(
-    @field:Json(name = "avatar_url") val avatarUrl: String
+    @SerialName("avatar_url") val avatarUrl: String
 )

@@ -2,7 +2,6 @@
 
 package com.denisbrandi.migrateretrofit.data.repository
 
-import com.denisbrandi.migrateretrofit.data.api.GithubProjectApiService
 import com.denisbrandi.migrateretrofit.domain.model.GetProjectsError
 import com.denisbrandi.migrateretrofit.domain.model.GithubProject
 import com.denisbrandi.migrateretrofit.prelude.Answer
@@ -11,29 +10,37 @@ import com.denisbrandi.netmock.NetMockRequest
 import com.denisbrandi.netmock.NetMockResponse
 import com.denisbrandi.netmock.resources.readFromResources
 import com.denisbrandi.netmock.server.NetMockServerRule
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import okhttp3.OkHttpClient
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.create
 
 class RealGithubProjectRepositoryTest {
 
     @get:Rule
     val netMock = NetMockServerRule()
 
-    private val okHttpClient = OkHttpClient.Builder().addInterceptor(netMock.interceptor).build()
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(MoshiConverterFactory.create())
-        .build()
+    private val ktorClient = HttpClient(OkHttp) {
+        engine {
+            addInterceptor(netMock.interceptor)
+        }
+        install(ContentNegotiation) {
+            json(
+                Json {
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                }
+            )
+        }
+    }
 
-    private val sut = RealGithubProjectRepository(retrofit.create<GithubProjectApiService>())
+    private val sut = RealGithubProjectRepository(ktorClient)
 
     @Test
     fun `EXPECT empty list of projects WHEN body is empty list`() = runTest {
@@ -104,7 +111,7 @@ class RealGithubProjectRepositoryTest {
             response = NetMockResponse(
                 code = 200,
                 mandatoryHeaders = MANDATORY_HEADERS,
-                body = "null"
+                body = "{}"
             )
         )
 
