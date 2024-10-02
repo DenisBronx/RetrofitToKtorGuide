@@ -8,28 +8,22 @@ import com.denisbrandi.migrateretrofit.prelude.Answer
 import com.denisbrandi.netmock.Method
 import com.denisbrandi.netmock.NetMockRequest
 import com.denisbrandi.netmock.NetMockResponse
+import com.denisbrandi.netmock.engine.NetMockEngine
 import com.denisbrandi.netmock.resources.readFromResources
-import com.denisbrandi.netmock.server.NetMockServerRule
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Test
 
 class RealGithubProjectRepositoryTest {
 
-    @get:Rule
-    val netMock = NetMockServerRule()
+    private val netMock = NetMockEngine()
 
-    private val ktorClient = HttpClient(OkHttp) {
-        engine {
-            addInterceptor(netMock.interceptor)
-        }
+    private val ktorClient = HttpClient(netMock) {
         install(ContentNegotiation) {
             json(
                 Json {

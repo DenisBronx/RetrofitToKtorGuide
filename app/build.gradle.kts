@@ -49,4 +49,5 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.netmock)
+    testImplementation(libs.netmock.resources)
 }
